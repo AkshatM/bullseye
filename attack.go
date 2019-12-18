@@ -58,12 +58,22 @@ func main() {
   })
   attacker := vegeta.NewAttacker()
 
-  var metrics vegeta.Metrics
-  for res := range attacker.Attack(targeter, rate, duration, "Big Bang!") {
-    metrics.Add(res)
-  }
-  metrics.Close()
+  var success_metrics vegeta.Metrics
+  var error_metrics vegeta.Metrics
 
-  reporter := vegeta.NewHDRHistogramPlotReporter(&metrics)
-  reporter.Report(os.Stdout)
+  for res := range attacker.Attack(targeter, rate, duration, "Big Bang!") {
+    if len(res.Error) == 0 {
+	success_metrics.Add(res)
+    } else {
+	error_metrics.Add(res)
+    }
+  }
+  success_metrics.Close()
+  error_metrics.Close()
+
+  success_reporter := vegeta.NewHDRHistogramPlotReporter(&success_metrics)
+  success_reporter.Report(os.Stdout)
+
+  error_reporter := vegeta.NewTextReporter(&error_metrics)
+  error_reporter.Report(os.Stderr)
 }
