@@ -9,35 +9,23 @@ import (
   "github.com/dchest/uniuri"
 )
 
+var possible_headers = [8]string{"user-agent", "server", "x-client-trace-id", "x-envoy-downstream-service-cluster", "x-envoy-downstream-service-node", "x-envoy-external-address", "x-envoy-force-trace", "x-envoy-internal"}
+
 // This maps a number to a list of headers. The header *values* are generated
-// dynamically. The Nth header key is populated by chekcing if the Nth bit is
-// set in `profile`. Since `profile` is a 64-bit integer, that means upto 64
-// unique headers can be added.
-func generateHeaders(profile uint64) http.Header {
+// dynamically. The Nth header key is populated by chekcing if the Nth digit from
+// the right is set to 1 in `profile`. e.g. 11111111 and 11110001 is a valid `profile`
+func generateHeaders(profile string) http.Header {
+
+	if len(profile) != 8 {
+		panic("Profile must be exactly eight digits long")
+	}
+
 	var headers http.Header
-	if (profile & (1 << 1)) > 0 {
-		headers.Add("user-agent", uniuri.New())
-	}
-	if (profile & (1 << 2)) > 0 {
-		headers.Add("server", uniuri.New())
-	}
-	if (profile & (1 << 3)) > 0 {
-		headers.Add("x-client-trace-id", uniuri.New())
-	}
-	if (profile & (1 << 4)) > 0 {
-		headers.Add("x-envoy-downstream-service-cluster", uniuri.New())
-	}
-	if (profile & (1 << 5)) > 0 {
-		headers.Add("x-envoy-downstream-service-node", uniuri.New())
-	}
-	if (profile & (1 << 6)) > 0 {
-		headers.Add("x-envoy-external-address", uniuri.New())
-	}
-	if (profile & (1 << 7)) > 0 {
-		headers.Add("x-envoy-force-trace", uniuri.New())
-	}
-	if (profile & (1 << 8)) > 0 {
-		headers.Add("x-envoy-internal", uniuri.New())
+
+	for index, header := range possible_headers {
+		if string(profile[index]) == "1" {
+			headers.Add(header, uniuri.New())
+		}
 	}
 	return headers
 }
@@ -48,10 +36,7 @@ func generateHeaders(profile uint64) http.Header {
 func main() {
 
   url := os.Args[1]
-  profile, err := strconv.ParseUint(os.Args[2], 10, 64)
-  if err != nil {
-	  panic(err)
-  }
+  profile := os.Args[2]
 
   frequency, err := strconv.Atoi(os.Args[3])
   if err != nil {
