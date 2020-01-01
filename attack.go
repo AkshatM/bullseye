@@ -20,7 +20,7 @@ func generateHeaders(profile string) http.Header {
 		panic("Profile must be exactly eight digits long")
 	}
 
-	var headers http.Header
+	headers := make(http.Header)
 
 	for index, header := range possible_headers {
 		if string(profile[index]) == "1" {
