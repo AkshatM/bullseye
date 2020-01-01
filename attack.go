@@ -1,12 +1,12 @@
 package main
 
 import (
-  "os"
-  "time"
-  "strconv"
-  "net/http"
-  vegeta "github.com/AkshatM/vegeta/lib"
-  "github.com/dchest/uniuri"
+	vegeta "github.com/AkshatM/vegeta/lib"
+	"github.com/dchest/uniuri"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 )
 
 var possible_headers = [8]string{"user-agent", "server", "x-client-trace-id", "x-envoy-downstream-service-cluster", "x-envoy-downstream-service-node", "x-envoy-external-address", "x-envoy-force-trace", "x-envoy-internal"}
@@ -35,45 +35,45 @@ func generateHeaders(profile string) http.Header {
 // to stdout.
 func main() {
 
-  url := os.Args[1]
-  profile := os.Args[2]
+	url := os.Args[1]
+	profile := os.Args[2]
 
-  frequency, err := strconv.Atoi(os.Args[3])
-  if err != nil {
-	  panic(err)
-  }
+	frequency, err := strconv.Atoi(os.Args[3])
+	if err != nil {
+		panic(err)
+	}
 
-  length, err := strconv.Atoi(os.Args[4])
-  if err != nil {
-	  panic(err)
-  }
+	length, err := strconv.Atoi(os.Args[4])
+	if err != nil {
+		panic(err)
+	}
 
-  rate := vegeta.Rate{Freq: frequency, Per: time.Second}
-  duration := time.Duration(length) * time.Second
-  targeter := vegeta.NewStaticTargeter(vegeta.Target{
-    Method: "GET",
-    URL:    url,
-    BodyContainsTimestamp: true,
-    Header: generateHeaders(profile),
-  })
-  attacker := vegeta.NewAttacker()
+	rate := vegeta.Rate{Freq: frequency, Per: time.Second}
+	duration := time.Duration(length) * time.Second
+	targeter := vegeta.NewStaticTargeter(vegeta.Target{
+		Method:                "GET",
+		URL:                   url,
+		BodyContainsTimestamp: true,
+		Header:                generateHeaders(profile),
+	})
+	attacker := vegeta.NewAttacker()
 
-  var success_metrics vegeta.Metrics
-  var error_metrics vegeta.Metrics
+	var success_metrics vegeta.Metrics
+	var error_metrics vegeta.Metrics
 
-  for res := range attacker.Attack(targeter, rate, duration, "Big Bang!") {
-    if len(res.Error) == 0 {
-	success_metrics.Add(res)
-    } else {
-	error_metrics.Add(res)
-    }
-  }
-  success_metrics.Close()
-  error_metrics.Close()
+	for res := range attacker.Attack(targeter, rate, duration, "Big Bang!") {
+		if len(res.Error) == 0 {
+			success_metrics.Add(res)
+		} else {
+			error_metrics.Add(res)
+		}
+	}
+	success_metrics.Close()
+	error_metrics.Close()
 
-  success_reporter := vegeta.NewHDRHistogramPlotReporter(&success_metrics)
-  success_reporter.Report(os.Stdout)
+	success_reporter := vegeta.NewHDRHistogramPlotReporter(&success_metrics)
+	success_reporter.Report(os.Stdout)
 
-  error_reporter := vegeta.NewTextReporter(&error_metrics)
-  error_reporter.Report(os.Stderr)
+	error_reporter := vegeta.NewTextReporter(&error_metrics)
+	error_reporter.Report(os.Stderr)
 }
